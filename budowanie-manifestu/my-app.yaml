@@ -1,0 +1,24 @@
+apiVersion: apps/v1
+kind: Deployment                # Type of resource
+metadata:
+  name: my-dep                  # Name of the deployment
+  labels:
+    app: my-dep                 # Label for the deployment
+spec:
+  replicas: 1                   # Number of replicas
+  selector:
+    matchLabels:
+      app: my-dep               # Label selector for pods
+  template:                     # Template for the pods
+    metadata:
+      labels:
+        app: my-dep             # Labels to apply to the pods
+    spec:
+      containers:
+      - image: node:18-alpine   # Container image to use
+        name: nodejs            # Name of the container
+        command: ["/bin/sh", "-c"]
+        args:
+          - |
+            echo "console.log('kubernetes dla programistów!');" > app.js
+            node app.js

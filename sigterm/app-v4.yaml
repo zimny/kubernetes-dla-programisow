@@ -1,0 +1,69 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: demo
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: demo
+  template:
+    metadata:
+      labels:
+        app: demo
+    spec:
+      containers:
+        - name: nodejs
+          image: node:18-alpine
+          readinessProbe: 
+            httpGet:
+              path: /readyz
+              port: 3000
+          livenessProbe:
+            httpGet:
+              path: /livez
+              port: 3000
+          command: ["/bin/sh", "-c"]
+          args:
+            - |
+              echo "const http = require('http'); 
+                    const url = require('url');
+                    const hostname = '0.0.0.0'; 
+                    const port = 3000; 
+                    let responseCode = 200;
+                    const server = http.createServer((req, res) => {
+                      const reqUrl =  url.parse(req.url, true);
+                      if((reqUrl.pathname == '/readyz' || reqUrl.pathname == '/livez') && req.method === 'GET') {
+                        res.statusCode = responseCode; 
+                        res.end('Hello World'); 
+                      } else {
+                        res.statusCode = responseCode; 
+                        res.setHeader('Content-Type', 'text/plain');
+                        res.end('Hello World'); 
+                      }
+                    }); 
+                    console.log('prepping gracefull close')
+                    process.on('SIGTERM', () => {
+                      console.log('gracefull closing')
+                      process.exit()
+                    });
+                    server.listen(port, hostname, () => { 
+                      console.log('Server running at http://localhost:3000/'); 
+                    });
+                    " > app.js
+              node app.js
+          ports:
+            - containerPort: 3000
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: demo-svc
+spec:
+  selector:
+    app: demo
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 3000
+  type: ClusterIP
